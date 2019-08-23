@@ -17,10 +17,10 @@ namespace EmojiText.Taurus
 		private List<SpriteGraphic> _spriteGraphics = new List<SpriteGraphic>();
 		
 		//绘制的模型数据信息
-		private readonly Dictionary<int, Dictionary<InlineText, MeshInfo>> _graphicMeshInfo = new Dictionary<int, Dictionary<InlineText, MeshInfo>>();
+		// private readonly Dictionary<int, Dictionary<InlineText, MeshInfo>> _graphicMeshInfo = new Dictionary<int, Dictionary<InlineText, MeshInfo>>();
 
 		//渲染列表
-		List<int> _renderIndexs = new List<int>();
+		// List<int> _renderIndexs = new List<int>();
 		#endregion
 
 		// Use this for initialization
@@ -49,152 +49,168 @@ namespace EmojiText.Taurus
 		}
 		#endregion
 
-		private void Update()
-		{
-			if (_renderIndexs != null && _renderIndexs.Count > 0)
-			{
-				for (int i = 0; i < _renderIndexs.Count; i++)
-				{
-					int id = _renderIndexs[i];
-					SpriteGraphic spriteGraphic = _spriteGraphics.Find(x => x.m_spriteAsset != null && x.m_spriteAsset.Id == id);
-					if (spriteGraphic != null)
-					{
-						if (!_graphicMeshInfo.ContainsKey(id))
-						{
-							spriteGraphic.MeshInfo = null;
-							continue;
-						}
+		// private void Update()
+		// {
+		// 	if (_renderIndexs != null && _renderIndexs.Count > 0)
+		// 	{
+		// 		for (int i = 0; i < _renderIndexs.Count; i++)
+		// 		{
+		// 			int id = _renderIndexs[i];
+		// 			SpriteGraphic spriteGraphic = _spriteGraphics.Find(x => x.m_spriteAsset != null && x.m_spriteAsset.Id == id);
+		// 			if (spriteGraphic != null)
+		// 			{
+		// 				if (!_graphicMeshInfo.ContainsKey(id))
+		// 				{
+		// 					spriteGraphic.MeshInfo = null;
+		// 					continue;
+		// 				}
 
-						Dictionary<InlineText, MeshInfo> textMeshInfo = _graphicMeshInfo[id];
-						if (textMeshInfo == null || textMeshInfo.Count == 0)
-							spriteGraphic.MeshInfo = null;
-						else
-						{
-							MeshInfo meshInfo = Pool<MeshInfo>.Get();
-							meshInfo.Reset();
-							foreach (var item in textMeshInfo)
-							{
-								if (item.Value.visable)
-								{
-                                    meshInfo.Vertices.AddRange(item.Value.Vertices);
-                                    meshInfo.UVs.AddRange(item.Value.UVs);
-								}
-							}
-							if (spriteGraphic.MeshInfo != null)
-								Pool<MeshInfo>.Release(spriteGraphic.MeshInfo);
+		// 				Dictionary<InlineText, MeshInfo> textMeshInfo = _graphicMeshInfo[id];
+		// 				if (textMeshInfo == null || textMeshInfo.Count == 0)
+		// 					spriteGraphic.MeshInfo = null;
+		// 				else
+		// 				{
+		// 					MeshInfo meshInfo = Pool<MeshInfo>.Get();
+		// 					meshInfo.Clear();
+		// 					foreach (var item in textMeshInfo)
+		// 					{
+		// 						if (item.Value.visable)
+		// 						{
+        //                             meshInfo.Vertices.AddRange(item.Value.Vertices);
+        //                             meshInfo.UVs.AddRange(item.Value.UVs);
+		// 						}
+		// 					}
+		// 					if (spriteGraphic.MeshInfo != null)
+		// 						Pool<MeshInfo>.Release(spriteGraphic.MeshInfo);
 
-							spriteGraphic.MeshInfo = meshInfo;
-						}
-					}
-				}
-				//清掉渲染索引
-				_renderIndexs.Clear();
-			}
-		}
+		// 					spriteGraphic.MeshInfo = meshInfo;
+		// 				}
+		// 			}
+		// 		}
+		// 		//清掉渲染索引
+		// 		_renderIndexs.Clear();
+		// 	}
+		// }
 
 		//更新Text文本信息
-		public void UpdateTextInfo(InlineText key, int id, List<SpriteTagInfo> value, bool visable)
+		// public void UpdateTextInfo(InlineText key, int id, List<SpriteTagInfo> value, bool visable)
+		// {
+		// 	Dictionary<InlineText, MeshInfo> textMeshInfo;
+		// 	if (value == null)
+		// 	{
+		// 		if (_graphicMeshInfo.TryGetValue(id, out textMeshInfo) && textMeshInfo.ContainsKey(key))
+		// 		{
+		// 			textMeshInfo[key].Release();
+		// 			textMeshInfo.Remove(key);
+		// 		}
+		// 	}
+		// 	else
+		// 	{
+		// 		SpriteGraphic spriteGraphic = _spriteGraphics.Find(x => x.m_spriteAsset != null && x.m_spriteAsset.Id == id);
+		// 		if (spriteGraphic != null)
+		// 		{
+		// 			if (!_graphicMeshInfo.TryGetValue(id, out textMeshInfo))
+		// 			{
+		// 				textMeshInfo = new Dictionary<InlineText, MeshInfo>();
+		// 				_graphicMeshInfo.Add(id, textMeshInfo);
+		// 			}
+
+		// 			MeshInfo meshInfo;
+		// 			if (!textMeshInfo.TryGetValue(key, out meshInfo))
+		// 			{
+		// 				meshInfo = Pool<MeshInfo>.Get();
+		// 				textMeshInfo.Add(key, meshInfo);
+		// 			}
+		// 			meshInfo.Clear();
+		// 			meshInfo.visable = visable;
+		// 			for (int i = 0; i < value.Count; i++)
+		// 			{
+		// 				for (int j = 0; j < value[i].Pos.Length; j++)
+		// 				{
+		// 					//世界转本地坐标->避免位置变换的错位
+		// 					meshInfo.Vertices.Add(Utility.TransformWorld2Point(spriteGraphic.transform, value[i].Pos[j]));
+		// 				}
+		// 				meshInfo.UVs.AddRange(value[i].UVs);
+		// 			}
+		// 		}
+		// 	}
+
+		// 	//添加到渲染列表里面  --  等待下一帧渲染
+		// 	if (!_renderIndexs.Contains(id))
+		// 	{
+		// 		_renderIndexs.Add(id);
+		// 	}
+		// }
+
+        [ContextMenu("Refresh")]
+		public void Refresh()
 		{
-			Dictionary<InlineText, MeshInfo> textMeshInfo;
-			if (value == null)
-			{
-				if (_graphicMeshInfo.TryGetValue(id, out textMeshInfo) && textMeshInfo.ContainsKey(key))
-				{
-					textMeshInfo[key].Release();
-					textMeshInfo.Remove(key);
-				}
-			}
-			else
-			{
-				SpriteGraphic spriteGraphic = _spriteGraphics.Find(x => x.m_spriteAsset != null && x.m_spriteAsset.Id == id);
-				if (spriteGraphic != null)
-				{
-					if (!_graphicMeshInfo.TryGetValue(id, out textMeshInfo))
-					{
-						textMeshInfo = new Dictionary<InlineText, MeshInfo>();
-						_graphicMeshInfo.Add(id, textMeshInfo);
-					}
-
-					MeshInfo meshInfo;
-					if (!textMeshInfo.TryGetValue(key, out meshInfo))
-					{
-						meshInfo = Pool<MeshInfo>.Get();
-						textMeshInfo.Add(key, meshInfo);
-					}
-					meshInfo.Reset();
-					meshInfo.visable = visable;
-					for (int i = 0; i < value.Count; i++)
-					{
-						for (int j = 0; j < value[i].Pos.Length; j++)
-						{
-							//世界转本地坐标->避免位置变换的错位
-							meshInfo.Vertices.Add(Utility.TransformWorld2Point(spriteGraphic.transform, value[i].Pos[j]));
-						}
-						meshInfo.UVs.AddRange(value[i].UVs);
-					}
-				}
-			}
-
-			//添加到渲染列表里面  --  等待下一帧渲染
-			if (!_renderIndexs.Contains(id))
-			{
-				_renderIndexs.Add(id);
-			}
+			IndexSpriteInfo.Clear();
+			Initialize();
 		}
 
-
-	}
-
-	#region 模型数据信息
-	public class MeshInfo
-	{
-		public List<Vector3> Vertices = null;
-		public List<Vector2> UVs = null;
-		public List<Color> Colors = null;
-		public List<int> Triangles = null;
-		public bool visable = true;
-		public bool listsInitalized = true;
-
-		public void Reset()
+		public string[] GetTags(int id)
 		{
-			if (!listsInitalized)
+			if (!IndexSpriteInfo.ContainsKey(id))
 			{
-                Vertices = ListPool<Vector3>.Get();
-                UVs = ListPool<Vector2>.Get();
-                Colors = ListPool<Color>.Get();
-                Triangles = ListPool<int>.Get();
+				return null;
+			}
 
-				listsInitalized = true;
-            }
+			var kc = IndexSpriteInfo[id].Keys;
+			string[] list = new string[kc.Count];
+			kc.CopyTo(list, 0);
 
-			if (Vertices)
-            	Vertices.Clear();
-			if (UVs)
-                UVs.Clear();
-            if (Colors)
-                Colors.Clear();
-			if (Triangles)
-                Triangles.Clear();
-        }
+			return list;
+		}
 
-		public void Release()
+		public SpriteAsset GetSpriteGraphic(int id)
 		{
-			if (listsInitalized)
-			{
-                ListPool<Vector3>.Release(Vertices);
-                ListPool<Vector2>.Release(UVs);
-                ListPool<Color>.Release(Colors);
-                ListPool<int>.Release(Triangles);
-                Pool<MeshInfo>.Release(this);
-
-                Vertices = null;
-                UVs = null;
-                Colors = null;
-                Triangles = null;
-
-				listsInitalized = false;
-            }
+			return _spriteGraphics.Find(x => x.m_spriteAsset != null && x.m_spriteAsset.Id == id).m_spriteAsset;
 		}
 	}
-	#endregion
+
+	// #region 模型数据信息
+	// public class MeshInfo
+	// {
+	// 	public List<Vector3> Vertices = null;
+	// 	public List<Vector2> UVs = null;
+	// 	public List<Color> Colors = null;
+	// 	public List<int> Triangles = null;
+	// 	public bool visable = true;
+	// 	private bool m_ListsInitalized = false;
+
+	// 	public void Clear()
+	// 	{
+	// 		if (!m_ListsInitalized)
+	// 	{
+			
+	// 	Vertices = ListPool<Vector3>.Get();
+	// 	 UVs = ListPool<Vector2>.Get();
+	// 	Colors = ListPool<Color>.Get();
+	// 	Triangles = ListPool<int>.Get();
+
+	// 		Vertices.Clear();
+	// 		UVs.Clear();
+	// 		Colors.Clear();
+	// 		Triangles.Clear();
+
+	// 		m_ListsInitalized = true;
+	// 	}
+	// 	}
+
+	// 	public void Release()
+	// 	{
+	// 		if (m_ListsInitalized)
+	// 		{
+    //         ListPool<Vector3>.Release(Vertices);
+    //         ListPool<Vector2>.Release(UVs);
+    //         ListPool<Color>.Release(Colors);
+    //         ListPool<int>.Release(Triangles);
+
+    //         Pool<MeshInfo>.Release(this);
+    //     	}
+	// 	}
+
+	// }
+	// #endregion
 }
