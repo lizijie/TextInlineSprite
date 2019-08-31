@@ -5,6 +5,7 @@ Shader "Hidden/UI/Emoji"
     Properties
     {
         [PerRendererData] _MainTex ("Sprite Texture", 2D) = "white" {}
+	    _ImageTex("Image Texture", 2D) = "white" {}
         _Color ("Tint", Color) = (1,1,1,1)
 
 		_CellAmount("Cell Amount",Float)=1
@@ -71,6 +72,7 @@ Shader "Hidden/UI/Emoji"
                 float4 vertex   : POSITION;
                 float4 color    : COLOR;
                 float2 texcoord : TEXCOORD0;
+				float2 texcoord1 : TEXCOORD1;
 
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
@@ -81,6 +83,7 @@ Shader "Hidden/UI/Emoji"
                 fixed4 color    : COLOR;
                 float2 texcoord  : TEXCOORD0;
                 float4 worldPosition : TEXCOORD1;
+				float2 texcoord1 : TEXCOORD2;
                 UNITY_VERTEX_OUTPUT_STEREO
             };
 
@@ -89,6 +92,8 @@ Shader "Hidden/UI/Emoji"
             fixed4 _TextureSampleAdd;
             float4 _ClipRect;
             float4 _MainTex_ST;
+			sampler2D _ImageTex;
+			float4 _ImageTex_ST;
 #if EMOJI_ANIMATION
 			float _CellAmount;
 			float _Speed;
@@ -101,22 +106,31 @@ Shader "Hidden/UI/Emoji"
                 OUT.worldPosition = v.vertex;
                 OUT.vertex = UnityObjectToClipPos(OUT.worldPosition);
 #if !EMOJI_ANIMATION
-				OUT.texcoord = TRANSFORM_TEX(v.texcoord, _MainTex);
+				OUT.texcoord1 = TRANSFORM_TEX(v.texcoord1, _MainTex);
 #else
-				float2 uv = TRANSFORM_TEX(v.texcoord, _MainTex);
+				float2 uv = TRANSFORM_TEX(v.texcoord1, _ImageTex);
 				float cell = 1.0f / _CellAmount;
 				float timeValue = fmod(_Time.y*_Speed, _CellAmount);
 				timeValue = floor(timeValue);
 				uv.x += cell * timeValue;
-				OUT.texcoord = uv;
+				OUT.texcoord1 = uv;
 #endif
+				OUT.texcoord = TRANSFORM_TEX(v.texcoord, _MainTex);
                 OUT.color = v.color * _Color;
                 return OUT;
             }
 
             fixed4 frag(v2f IN) : SV_Target
             {
-                half4 color = (tex2D(_MainTex, IN.texcoord) + _TextureSampleAdd) * IN.color;
+				half4 color;
+				if (IN.texcoord1.x > 0 && IN.texcoord1.y > 0)
+				{
+					color = tex2D(_ImageTex, IN.texcoord1);
+				}
+				else
+				{
+					color = (tex2D(_MainTex, IN.texcoord) + _TextureSampleAdd) * IN.color;
+				}
 
                 #ifdef UNITY_UI_CLIP_RECT
               //  color.a *= UnityGet2DClipping(IN.worldPosition.xy, _ClipRect);
@@ -131,5 +145,5 @@ Shader "Hidden/UI/Emoji"
         ENDCG
         }
     }
-	CustomEditor "EmojiText.Taurus.EmojiShaderGUI"
+	//CustomEditor "EmojiText.Taurus.EmojiShaderGUI"
 }
