@@ -15,6 +15,8 @@ namespace EmojiText.Taurus
 		private string _lastText;
 		SerializedProperty _text;
 		SerializedProperty m_Text;
+		SerializedProperty m_spriteAsset;
+		SerializedProperty m_spriteSize;
 		SerializedProperty m_FontData;
 		GUIContent _inputGUIContent;
 		GUIContent _outputGUIContent;
@@ -28,6 +30,8 @@ namespace EmojiText.Taurus
 
 			_text = serializedObject.FindProperty("_text");
 			m_Text = serializedObject.FindProperty("m_Text");
+			m_spriteAsset = serializedObject.FindProperty("_spriteAsset");
+			m_spriteSize = serializedObject.FindProperty("_spriteSize");
 			m_FontData = serializedObject.FindProperty("m_FontData");
 
 			_inlineText = target as InlineText;
@@ -38,6 +42,8 @@ namespace EmojiText.Taurus
 			serializedObject.Update();
 			EditorGUILayout.PropertyField(_text, _inputGUIContent);
 			EditorGUILayout.PropertyField(m_Text, _outputGUIContent);
+			EditorGUILayout.PropertyField(m_spriteAsset);
+			EditorGUILayout.PropertyField(m_spriteSize);
 			EditorGUILayout.PropertyField(m_FontData);
 			AppearanceControlsGUI();
 			RaycastControlsGUI();

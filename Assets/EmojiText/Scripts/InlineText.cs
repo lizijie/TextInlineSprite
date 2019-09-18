@@ -14,10 +14,18 @@ namespace EmojiText.Taurus
 	{
 		#region 属性
 		// 用正则取  [图集ID#表情Tag] ID值==-1 ,表示为超链接
+		// private static readonly Regex _inputTagRegex = new Regex(@"\[(\-{0,1}\d{0,})#(.+?)(:{1}(.+?))?\]", RegexOptions.Singleline);
 		private static readonly Regex _inputTagRegex = new Regex(@"\[(\-{0,1}\d{0,})#(.+?)(:{1}(.+?))?\]", RegexOptions.Singleline);
-		//文本表情管理器
-		private InlineManager _inlineManager;
-		private SpriteAsset m_spriteAsset;
+		private static readonly string _defaultShader = "Hidden/UI/Emoji";
+
+		private Material _defaultMater = null;
+
+		[SerializeField]
+		public SpriteAsset _spriteAsset;
+
+		// 表情大小
+		[SerializeField]
+        private int _spriteSize = -1;
 
 		//表情位置索引信息
 		private List<SpriteTagInfo> _spriteInfo = new List<SpriteTagInfo>();
@@ -28,6 +36,7 @@ namespace EmojiText.Taurus
 
 		UIVertex _tempVertex = UIVertex.simpleVert;
 		// private List<int> _lastRenderIndexs = new List<int>();
+
 		#region 超链接
 		[System.Serializable]
 		public class HrefClickEvent : UnityEvent<string, int> { }
@@ -36,16 +45,8 @@ namespace EmojiText.Taurus
 		// 超链接信息列表  
 		private readonly List<HrefInfo> _listHrefInfos = new List<HrefInfo>();
 		#endregion
-
-		// 表情大小
-        public int stickSize { get; set; }
-
 		#endregion
 
-		private const string _defaultShader = "UI/Emoji";
-		private Material _defaultMater = null;
-
-		public int spriteSize = -1;
 
 		#region 重写函数
 		[TextArea(3, 10)]
@@ -89,51 +90,38 @@ namespace EmojiText.Taurus
 			}
 		}
 
-        //public override Texture mainTexture
-        //{
-        //    get
-        //    {
-        //        m_spriteAsset = this._inlineManager.GetSpriteGraphic(1);
-        //        if (m_spriteAsset == null || m_spriteAsset.TexSource == null)
-        //            return base.mainTexture;
-        //        else
-        //            return m_spriteAsset.TexSource;
-        //    }
-        //}
-
         public override Material material
         {
             get
             {
-                m_spriteAsset = this._inlineManager.GetSpriteGraphic(0);
-				// Logger.Log("_defaultMater == nil " + (_defaultMater == null));
-                if (_defaultMater == null && m_spriteAsset != null)
-                {
+				if (_defaultMater == null)
+				{
                     _defaultMater = new Material(Shader.Find(_defaultShader));
-                    //是否开启动画
-					// Debug.Log("m_spriteAsset.IsStatic " + m_spriteAsset.IsStatic);
-                    if (m_spriteAsset.IsStatic)
+                	_defaultMater.SetTexture("_MainTex", this.mainTexture);
+                    _defaultMater.SetTexture("_ImageTex", this.mainTexture);
+				}
+
+                if (_spriteAsset != null)
+				{
+					if (_spriteAsset.TexSource != null)
+					{
+                        _defaultMater.SetTexture("_ImageTex", _spriteAsset.TexSource);
+					}
+
+                    // Debug.Log("_spriteAsset.IsStatic: " + _spriteAsset.IsStatic);
+                    if (_spriteAsset.IsStatic)
+					{
                         _defaultMater.DisableKeyword("EMOJI_ANIMATION");
+					}
                     else
                     {
                         _defaultMater.EnableKeyword("EMOJI_ANIMATION");
-                        _defaultMater.SetFloat("_CellAmount", m_spriteAsset.Column);
-                        _defaultMater.SetFloat("_Speed", m_spriteAsset.Speed);
+                        _defaultMater.SetFloat("_CellAmount", _spriteAsset.Column);
+                        _defaultMater.SetFloat("_Speed", _spriteAsset.Speed);
                     }
-                }
-
-                _defaultMater.SetTexture("_MainTex", mainTexture);
-
-                m_spriteAsset = this._inlineManager.GetSpriteGraphic(0);
-                if (m_spriteAsset == null || m_spriteAsset.TexSource == null)
-				{
-                    _defaultMater.SetTexture("_ImageTex", base.mainTexture);
 				}
-                else
-				{
-                    _defaultMater.SetTexture("_ImageTex", m_spriteAsset.TexSource);
-				}
-                return _defaultMater;
+
+               return _defaultMater;
             }
         }
 
@@ -142,8 +130,6 @@ namespace EmojiText.Taurus
 			base.OnEnable();
 			supportRichText = true;
 			alignByGeometry = true;
-			if(_inlineManager==null)
-				_inlineManager = GetComponentInParent<InlineManager>();
             // UpdateDrawSprite(true);
 		}
 
@@ -157,8 +143,6 @@ namespace EmojiText.Taurus
 		{
 			base.Start();
 
-			if (_inlineManager == null)
-				_inlineManager = GetComponentInParent<InlineManager>();
 			m_Text = GetOutputText(_text);
 			SetVerticesDirty();
 			SetLayoutDirty();
@@ -246,6 +230,7 @@ namespace EmojiText.Taurus
 				if (!string.IsNullOrEmpty(match.Groups[1].Value) && !match.Groups[1].Value.Equals("-"))
 					tempId = int.Parse(match.Groups[1].Value);
 				string tempTag = match.Groups[2].Value;
+				
 				//更新超链接
 				if (tempId < 0)
 				{
@@ -269,15 +254,14 @@ namespace EmojiText.Taurus
 				//更新表情
 				else
 				{
-					if (_inlineManager == null || !_inlineManager.IndexSpriteInfo.ContainsKey(tempId)
-						|| !_inlineManager.IndexSpriteInfo[tempId].ContainsKey(tempTag))
+					if (_spriteAsset == null || !_spriteAsset.ContainTag(tempTag))
 						continue;
 
-					SpriteInforGroup tempGroup = _inlineManager.IndexSpriteInfo[tempId][tempTag];
+					SpriteInforGroup tempGroup = _spriteAsset.GetSpriteInfoForGroup(tempTag);
 
 					_textBuilder.Append(inputText.Substring(textIndex, match.Index - textIndex));
 					int tempIndex = _textBuilder.Length * 4;
-					_textBuilder.Append(@"<quad size=" + (stickSize > 0 ? stickSize : fontSize) + " width=" + tempGroup.Width + " />");
+					_textBuilder.Append(@"<quad size=" + (_spriteSize > 0 ? _spriteSize : fontSize) + " width=" + tempGroup.Width + " />");
 
 					//清理标签
 					SpriteTagInfo tempSpriteTag = Pool<SpriteTagInfo>.Get();
@@ -319,10 +303,6 @@ namespace EmojiText.Taurus
 						//清理多余的乱码uv
 						_tempVertex.uv0 = Vector2.zero;
 						_tempVertex.uv1 = _spriteInfo[i].UVs[j - index];
-						//Debug.Log("uv1: " + _tempVertex.uv1);
-						// _tempVertex.color = Color .red;
-						//获取quad的位置 --> 转为世界坐标
-						// _spriteInfo[i].Pos[j - index] = Utility.TransformPoint2World(transform, _tempVertex.position);
 						toFill.SetUIVertex(_tempVertex, j);
 					}
 				}
@@ -400,32 +380,6 @@ namespace EmojiText.Taurus
 			}
 		}
 		
-		//表情绘制
-		// private void UpdateDrawSprite(bool visable)
-		// {
-		// 	//记录之前的信息
-		// 	if ((_spriteInfo == null || _spriteInfo.Count == 0) && _lastRenderIndexs.Count > 0)
-		// 	{
-		// 		for (int i = 0; i < _lastRenderIndexs.Count; i++)
-		// 		{
-		// 			_inlineManager.UpdateTextInfo(this, _lastRenderIndexs[i], null, visable);
-		// 		}
-		// 		_lastRenderIndexs.Clear();
-		// 	}
-		// 	else
-		// 	{
-		// 		_lastRenderIndexs.Clear();
-		// 		for (int i = 0; i < _spriteInfo.Count; i++)
-		// 		{
-		// 			//添加渲染id索引
-		// 			if (!_lastRenderIndexs.Contains(_spriteInfo[i].Id))
-		// 			{
-		// 				_inlineManager.UpdateTextInfo(this, _spriteInfo[i].Id, _spriteInfo.FindAll(x => x.Id == _spriteInfo[i].Id), visable);
-		// 				_lastRenderIndexs.Add(_spriteInfo[i].Id);
-		// 			}
-		// 		}
-		// 	}
-		// }
 		//回收SpriteTagInfo
 		private void ReleaseSpriteTageInfo()
 		{
@@ -437,6 +391,7 @@ namespace EmojiText.Taurus
 			}
 			_spriteInfo.Clear();
 		}
+
 		//回收超链接的信息
 		private void ReleaseHrefInfos()
 		{
