@@ -1,47 +1,147 @@
-﻿### **新增功能**  
-0. 重写了配置文件编辑工具，可快速生成表情配置文件
-1. 使用shader渲染表情动画，取消了在update中循环更新模型数据  
-2. 支持在编辑器中直接预览(支持不完全)  
-3. 在编辑中增加了线框辅助调试  
-4. 利用了对象池对部分比较明显的GC问题进行了优化  
-5. 重新更换了坐标系转换的计算，更好的支持Canvas Render Mode的切换  
-6. 精简整理了代码  
-7. 简单优化了编辑器的操作  
-
+---
+layout: post
+title: 记一次修改unity3d富文本插件的设计缺陷
+key: 201909182243
+tags: 插件 富文本
 ---
 
-### **强行解释**  
-0. 性能优化会在后面持续进行
-1. 利用shader渲染表情动画，可以更好的利用设备的性能。一开始是准备利用UGUI的Mesh支持uv0-uv3，存下多个数据，来做表情动画。在使用了uv移动来做动画后，感觉uv0-uv3四层不够用，于是坚持老方法。   
-2. 在选择使用uv移动来做动画，对表情图集有一定的要求:建议每个表情的规格一致，动态表情需要放成一排。具体参考demo自带图集。  
-3. 现在所有的参数都已经在配置文件中， 请根据需求自行调整。  
-4. 之前也提过，写这个插件并没有实际的使用机会，难免考虑不周，收集的意见，大部分都有自己的想法，比较杂乱，所以建议如果能直接使用，那是最好的。如果跟自己的需求有偏差，希望能作个参考，自己更改，欢迎提交pr。然后我会再尽力写成通用的。  
-5. 提交的pr，改动小，我会检查合并，如果改动太大，我会单独新建分支留存，以便有需要的人查看。  
+[TOC]
 
----  
+小弟最近开发客户端的聊天系统。策划案子要求支持图片和文字混排。我在github上找到了功能较为丰富，start数比较多的插件[TextInlineSprite](https://github.com/coding2233/TextInlineSprite)
 
-### **功能介绍**  
-1. 此插件是基于UGUI所做的图文混排功能，常用于聊天系统的表情嵌入;  
-2. 可支持静/动态表情,支持超链接;  
-3. 实现原理，是基于UGUI的富文本，使用quad标签进行占位;  
-4. 使用了Asset文件来存储本地的表情信息;  
-5. Text根据正则表达式，解析文本，读取相应的表情信息，并在相应位置绘制相应的Sprite;  
-6. 正则表达式为[图集ID#表情标签]，图集ID为-ID时，表示此标签为超链接，如-1,图集ID为 0时，可省略不写;  
-7. 有同学提过想支持移动端系统自带的表情，我这里只提一个简单的实现思路，集成不看自己的实际需求了，自己备好系统表情的图集，再解析一下当前系统输入表情的正则表达式，然后跟插件一样的嵌入到Text中（这算是正常的集成实现思路么？）;  
----
-### **使用步骤**  
-1. 选择一张表情图片，导入在unity里，为了支持透明通道，记得在图片属性中勾选`Alpha Is Transparent` 
-2. 右键选择图片，点击`Create/Sprite Asset`,打开资源窗口编辑器,点击`Save`来保存配置文件
-    ![](ShotScreens/editor_01.png) 
-3. 在保存配置文件后，首先为图集设置一个唯一Id,然后设置图集表情的行列数，来自动切分表情，动态表情会自动将一排的Sprite自动归纳为一个表情，最后为每个表情设置一个可读的Tag，后续提供给Text调用。
-    ![](ShotScreens/editor_02.png) 
-4. 配置文件创建完成后，在编辑器中，也可以预览，操作与资源窗口编辑器类型，并且点击`Open Asset Window`也可以打开编辑器窗口
-    ![](ShotScreens/editor_03.png) 
-5. 文字使用方式，参考demo场景'Text'，输入`NewText[1#rock]`即可显示表情
+它支持：
+* 文本超链接显示
+* 文本下划线效果
+* 支持同时多个表情集
 
----  
+插件提供了详细的样例代码，让你非常容易入手。在此感觉作者[coding2233](https://github.com/coding2233)的贡献
 
-### **截图展示**  
-![ 标签对应表情](ShotScreens/tw04_01.gif)  
-![聊天示例](ShotScreens/tw05_01.gif)  
-![更新后，功能展示](ShotScreens/tw05_00.png)   
+
+![](https://raw.githubusercontent.com/lizijie/lizijie.github.io/master/assets/images/2019-09-18-%E8%AE%B0%E4%B8%80%E6%AC%A1%E4%BF%AE%E6%94%B9unity3d%E5%AF%8C%E6%96%87%E6%9C%AC%E6%8F%92%E4%BB%B6%E7%9A%84%E8%AE%BE%E8%AE%A1%E7%BC%BA%E9%99%B7/inlinetext_bug.png)
+
+然而，当我滑动无限复用列表时，表情位置显示不正确（如上图）！！我参考插件样例ChatTest相关代码（如下），当ScrollRect的位置变化时，同时也调整SpriteGraphic的位置，目的抵消表情位置偏差。不过问题依然没有改善。
+
+```c#
+namespace EmojiText.Taurus
+{
+    
+	public class ChatTest : MonoBehaviour
+	{
+        //滚动文本
+		[SerializeField]
+		private ScrollRect _scrollView;
+
+        [SerializeField]
+		private RectTransform _spriteRect;
+
+        // something here...
+
+        private IEnumerator Start()
+		{
+			_scrollView.onValueChanged.AddListener(OnSrcollViewChanged);
+
+            // something here...
+        }
+
+        private void OnSrcollViewChanged(Vector2 pos)
+		{
+			_spriteRect.anchoredPosition = _scrollView.content.anchoredPosition;
+
+            // something here...
+        }
+
+        // something here...
+    }
+}
+```
+
+经过长时间的调试，我发现在UI复用的一帧非常容易出现位置错误。实际是一个设计缺陷，导致了该问题。我向作者已提了[issues](https://github.com/coding2233/TextInlineSprite/issues/46)
+
+>渲染一个表情在v3.0的实现里，流程大致如下：
+>
+>**【流程一】** InlineText.OnPopulateMesh转换表情顶点至全局坐标，InlineManager.UpdateTextInfo再将全局坐标转换到SpriteGraphic下的局部坐标。
+>
+>**【流程二】** InlineManager.Update合批相同表情ID的Mesh，转输到SpriteGraphic.OnPopulateMesh作最终渲染。
+>
+>因为InlineManager.Update合批Mesh，所以这两个流程相差1帧。如果InlineText的坐标在这帧变动了（如列表划动），因为没其它逻辑去强刷缓存在InlineManager的EmojiText.Taurus.MeshInfo坐标，所以SpriteGraphic.OnPopulateMesh使用的是不正确的坐标。结果显示上表情位置偏移了。
+>
+>像ChatTest样例中，监听ScrollRect.onValueChanged事件，修复SpriteGraphic坐标并未解决以上问题。因为它是与 **【流程一】**  同帧进行。依然与 **【流程二】** 相差了1帧。
+>
+>```c#
+>private void OnSrcollViewChanged(Vector2 pos)
+>{
+>    _spriteRect.anchoredPosition = _scrollView.content.anchoredPosition;
+>}
+>```
+>
+>**测试代码如下：**
+>```c#
+>public class Test : MonoBehaviour
+>{
+>    public InlineText inText = null;
+>    public SpriteGraphic graphic = null;
+>
+>    void Start()
+>    {
+>        inText.text = "NewText[#emoji_0]";
+>
+>		// 模拟在【流程一】与【流程二】中间1帧，修改了InlineText坐标
+>        graphic.RegisterDirtyVerticesCallback(() =>
+>        {
+>            inText.transform.localPosition = new Vector3(200, 200, 0);
+>        });
+>    }
+>}
+>```
+>**执行结果如下**
+>![image](https://user-images.githubusercontent.com/3928231/64693604-32aa1380-d4ca-11e9-83c3-c3b6048ba8b4.png)
+
+为解决这个设计缺陷和满足我当时项目开发需要。我稍微对[TextInlineSprite](https://github.com/coding2233/TextInlineSprite)进行了调整
+
+* 删除了InlineManager合批渲染相同表情ID的代码。
+* 重构表情渲染流程
+* 增加单独修改表情大小的代码
+
+**删除了InlineManager合批渲染相同表情ID的代码。**
+
+重要！！重要！！重要！！删除后不支持同时渲染多套表情ID。对于多数游戏项目来讲，只会用到一套表情。删除这些代码的主要目的是提升代码效率。
+
+**重构表情渲染流程**
+
+因为不再对相同的表情ID合批渲染。修改后相应的工作转移到了InlineText。而表情集对象SpriteAsset在InlineText的Inspector面板绑定。如下图
+![](https://raw.githubusercontent.com/lizijie/lizijie.github.io/master/assets/images/2019-09-18-%E8%AE%B0%E4%B8%80%E6%AC%A1%E4%BF%AE%E6%94%B9unity3d%E5%AF%8C%E6%96%87%E6%9C%AC%E6%8F%92%E4%BB%B6%E7%9A%84%E8%AE%BE%E8%AE%A1%E7%BC%BA%E9%99%B7/inlinetext_add_feature.png)
+
+InlineText.DealSpriteTagInfo在处理表情顶点时删除了转世界标点的代码。同时UI-Emoji也作了修改后，在这里只需要为顶点赋uv值就可。
+
+![](https://raw.githubusercontent.com/lizijie/lizijie.github.io/master/assets/images/2019-09-18-%E8%AE%B0%E4%B8%80%E6%AC%A1%E4%BF%AE%E6%94%B9unity3d%E5%AF%8C%E6%96%87%E6%9C%AC%E6%8F%92%E4%BB%B6%E7%9A%84%E8%AE%BE%E8%AE%A1%E7%BC%BA%E9%99%B7/inlinetext_deal_sprite.png)
+
+
+**增加单独修改表情大小的代码**
+
+![](https://raw.githubusercontent.com/lizijie/lizijie.github.io/master/assets/images/2019-09-18-%E8%AE%B0%E4%B8%80%E6%AC%A1%E4%BF%AE%E6%94%B9unity3d%E5%AF%8C%E6%96%87%E6%9C%AC%E6%8F%92%E4%BB%B6%E7%9A%84%E8%AE%BE%E8%AE%A1%E7%BC%BA%E9%99%B7/inlinetext_stick_size_anim.gif)
+
+
+**关于性能问题**
+
+由于删除InlineManager的合批，Batches会随InlineText数量线性增长。当时我对我们项目中的聊天消息列表，进行了性能测试。
+
+首先要声明一下
+1. 列表满1页可容纳8条聊天消息
+2. 每条聊天消息有6个表情
+
+* 当聊天信息条数2条（不满1页）时，Batches相同，修改后顶点少0.1k，三角面少0.1k
+* 当聊天信息条数8条（刚好满1页）时，修改后的代码多5个Batches，修改后顶点少1k，三角面少0.2k
+* 当聊天信息条数29条时（超过1页）时，修改前的代码Batches没有增加。修改后的代码多28个Batches，修改后的顶点少2k，三角面少1k。
+
+**然而batches增长的问题，可以用无限滚动列表组件过来解决，这样聊天消息条数不会超过1页数量，间接控制了batches和顶点的增加。总体上，batches多约5个batches。个人认为性能还可接受。**
+
+以上修改放在我的github上<b><https://github.com/lizijie/TextInlineSprite/tree/m2></b>，欢迎下载！
+
+<br>	
+<br>	
+<b>原文:<br>
+<https://lizijie.github.io/2019/09/18/%E8%AE%B0%E4%B8%80%E6%AC%A1%E4%BF%AE%E6%94%B9unity3d%E5%AF%8C%E6%96%87%E6%9C%AC%E6%8F%92%E4%BB%B6%E7%9A%84%E8%AE%BE%E8%AE%A1%E7%BC%BA%E9%99%B7.html>
+<br>
+作者github:<br>	
+<https://github.com/lizijie>	
+</b>
