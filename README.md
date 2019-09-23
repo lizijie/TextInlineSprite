@@ -19,7 +19,7 @@ tags: 插件 富文本
 
 ![](https://raw.githubusercontent.com/lizijie/lizijie.github.io/master/assets/images/2019-09-18-%E8%AE%B0%E4%B8%80%E6%AC%A1%E4%BF%AE%E6%94%B9unity3d%E5%AF%8C%E6%96%87%E6%9C%AC%E6%8F%92%E4%BB%B6%E7%9A%84%E8%AE%BE%E8%AE%A1%E7%BC%BA%E9%99%B7/inlinetext_bug.png)
 
-然而，当我滑动无限复用列表时，表情位置显示不正确（如上图）！！我参考插件样例ChatTest相关代码（如下），当ScrollRect的位置变化时，同时也调整SpriteGraphic的位置，目的抵消表情位置偏差。不过问题依然没有改善。
+然而，当我滑动无限复用列表时，表情位置显示不正确（如上图）！！特别是在UI项超出边界，被回收复用时，偏移尤为明显。我参考插件样例ChatTest相关代码（如下），当ScrollRect的位置变化时，同时也调整SpriteGraphic的位置，目的是抵消表情位置偏差。不过问题依然没有改善。
 
 ```c#
 namespace EmojiText.Taurus
@@ -96,7 +96,7 @@ namespace EmojiText.Taurus
 >**执行结果如下**
 >![image](https://user-images.githubusercontent.com/3928231/64693604-32aa1380-d4ca-11e9-83c3-c3b6048ba8b4.png)
 
-为解决这个设计缺陷和满足我当时项目开发需要。我稍微对[TextInlineSprite](https://github.com/coding2233/TextInlineSprite)进行了调整
+为解决这个设计缺陷和满足我当时项目开发需要。我稍微对[TextInlineSprite 3.0.0](https://github.com/coding2233/TextInlineSprite/tree/Text-v3.0-b) 进行了调整
 
 * 删除了InlineManager合批渲染相同表情ID的代码。
 * 重构表情渲染流程
