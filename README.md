@@ -115,13 +115,15 @@ InlineText.DealSpriteTagInfo在处理表情顶点时删除了转世界标点的�
 
 ![](https://raw.githubusercontent.com/lizijie/lizijie.github.io/master/assets/images/2019-09-18-%E8%AE%B0%E4%B8%80%E6%AC%A1%E4%BF%AE%E6%94%B9unity3d%E5%AF%8C%E6%96%87%E6%9C%AC%E6%8F%92%E4%BB%B6%E7%9A%84%E8%AE%BE%E8%AE%A1%E7%BC%BA%E9%99%B7/inlinetext_deal_sprite.png)
 
+另外注意，修改后的UI-Emoji.shader同时使用了字库uv和表情图集uv，所以Canvas.additionalShaderChannels必须满足2重uv的要求
+
 
 **增加单独修改表情大小的代码**
 
 ![](https://raw.githubusercontent.com/lizijie/lizijie.github.io/master/assets/images/2019-09-18-%E8%AE%B0%E4%B8%80%E6%AC%A1%E4%BF%AE%E6%94%B9unity3d%E5%AF%8C%E6%96%87%E6%9C%AC%E6%8F%92%E4%BB%B6%E7%9A%84%E8%AE%BE%E8%AE%A1%E7%BC%BA%E9%99%B7/inlinetext_stick_size_anim.gif)
 
 
-**关于性能问题**
+**关于性能**
 
 由于删除InlineManager的合批，Batches会随InlineText数量线性增长。当时我对我们项目中的聊天消息列表，进行了性能测试。
 
